@@ -1,0 +1,63 @@
+buildscript {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}"
+        classpath "org.springframework.cloud:spring-cloud-contract-gradle-plugin:${springCloudContractVersion}"
+//        classpath "org.springframework.cloud:spring-cloud-contract-spec-pact:${springcloudcontract_pact_version}"
+//        classpath 'au.com.dius:pact-jvm-model:2.4.18'
+    }
+}
+
+
+plugins {
+    id 'org.springframework.boot' version '2.1.3.RELEASE'
+    id 'java'
+}
+
+apply plugin: 'java'
+apply plugin: 'org.springframework.boot'
+apply plugin: 'io.spring.dependency-management'
+apply plugin: 'spring-cloud-contract'
+apply plugin: 'maven-publish'
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '1.8'
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.projectlombok:lombok'
+    runtimeOnly 'com.h2database:h2'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.cloud:spring-cloud-starter-contract-verifier'
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+    }
+}
+
+contracts {
+    baseClassMappings {
+        baseClassMapping(".*userService.*", "com.example.contract.controller.UserServiceBase")
+        baseClassMapping(".*accountService.*", "com.example.contract.controller.AccountServiceBase")
+    }
+}
+
+// a hack to locally publish the contract stubs when executing the build task
+// so that it works in the CI build without a Nexus or Artifactory server
+build.doLast {
+    tasks.generatePomFileForStubsPublication.execute()
+    tasks.publishStubsPublicationToMavenLocal.execute()
+}
